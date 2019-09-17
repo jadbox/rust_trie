@@ -6,6 +6,8 @@ use std::io::prelude::*;
 use std::fs::File;
 use uuid::Uuid;
 use std::time::{Duration, Instant};
+extern crate lifeguard;
+use lifeguard::*;
 
 // const xid: Uuid = Uuid::new_v4();
 
@@ -26,6 +28,21 @@ impl PartialEq for Node {
 impl Hash for Node {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         self.id.hash(hasher);
+    }
+}
+
+impl lifeguard::Recycleable for Box<Node> {
+    fn new() -> Self {
+        return Box::new(Node::new('!'));
+    }
+    fn reset(&mut self){
+        return;
+    }
+}
+
+impl lifeguard::InitializeWith<char> for Box<Node> {
+    fn initialize_with(&mut self, source: char) {
+        self.val = source;
     }
 }
 
@@ -57,6 +74,18 @@ impl Node {
         next.set_terminal()
     }
 
+    fn insert_bypool(&mut self, s: String, pool: &mut Pool<Box<Node>>) {
+        let mut next = self;
+        for c in s.chars() {
+            next = next
+                .children
+                .entry(c)
+                .or_insert_with(|| pool.new_from(c).detach())
+        }
+
+        next.set_terminal()
+    }
+
     fn lookup(&self, s: String) -> (bool, Vec<String>) {
         // returns (true/false if it contains), list of autocompletes
         let mut next = self;
@@ -79,23 +108,23 @@ impl Node {
             contains = true;
         }
 
-        let mut explored: HashSet<Uuid> = HashSet::new();
-        let mut frontier: Vec<(&Box<Node>, Vec<char>)> = Vec::new();
-        let mut path: Vec<char> = s.chars().collect();
+        // let mut explored: HashSet<Uuid> = HashSet::new();
+        let mut frontier: Vec<(&Box<Node>, String)> = Vec::new();
+        let mut path: String = s; // .clone(); // No need to .clone(), already own it by copy
 
         while true {
             // terminal node - should also add check for null char (we could have brom and brom, but it would not)
             if next.children.len() == 0 || next.is_terminal {
-                suggestions.push(path.iter().collect());
+                suggestions.push(path.clone());
             }
 
-            for (k, v) in &next.children {
-                if !explored.contains(&v.id) {
-                    frontier.push((v, path.clone()));
-                }
+            for (_, v) in &next.children {
+                // if !explored.contains(&v.id) {
+                    frontier.push( (v, path.clone() ))
+                // }
             }
 
-            explored.insert(next.id);
+            // explored.insert(next.id);
 
             match frontier.pop() {
                 Some(t) => {
@@ -114,7 +143,7 @@ impl Node {
 
 fn bench() {
     // https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
-    let f = File::open("/home/brector/dev/words.txt").unwrap();
+    let f = File::open("words.txt").unwrap();
     let f = BufReader::new(f);
 
 
@@ -122,13 +151,14 @@ fn bench() {
 
     let mut t0;
     let mut trie = Node::new('\x00');
+    let mut pool:Pool<Box<Node>> = pool().with(StartingSize(words.len())).build();
 
     let mut inserts = Vec::new();
     let mut lookups = Vec::new();
 
     for w in words.iter() {
         t0 = Instant::now();
-        trie.insert(w.clone());
+        trie.insert_bypool(w.clone(), &mut pool);
         inserts.push(t0.elapsed().as_nanos());
     }
 
