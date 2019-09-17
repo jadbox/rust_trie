@@ -1,0 +1,5 @@
+/target
+**/words.txt
+words.txt
+**/*.rs.bk
+/trie/target
