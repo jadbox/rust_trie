@@ -22,7 +22,7 @@ use criterion::*;
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(100).measurement_time(Duration::from_secs(1)).warm_up_time(Duration::from_secs(1));
+    config = Criterion::default().sample_size(1200).measurement_time(Duration::from_secs(2)).warm_up_time(Duration::from_secs(1));
     targets = criterion_benchmark
 }
 criterion_main!(benches);
