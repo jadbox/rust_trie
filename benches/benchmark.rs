@@ -22,7 +22,7 @@ use criterion::*;
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(10).measurement_time(Duration::from_secs(2));
+    config = Criterion::default().sample_size(100).measurement_time(Duration::from_secs(1)).warm_up_time(Duration::from_secs(1));
     targets = criterion_benchmark
 }
 criterion_main!(benches);
@@ -32,56 +32,67 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let f = File::open("words.txt").unwrap();
     let f = BufReader::new(f);
 
-    let words2: Vec<String> = f.lines().map(|x| x.unwrap()).collect();
-    let words = words2[0..60000].to_vec(); // limit input for speed
+    let words: Vec<String> = f.lines().map(|x| x.unwrap()).collect();
 
-    let mut trie = Node::new('\x00');
     let mut pool: Pool<Box<Node>> = pool().with(StartingSize(words.len() * 2)).build();
 
+    let mut _trie = Node::new('\x00');
     c.bench_function("trie insert", |b| {
-        b.iter_batched_ref(|| words.clone(), |words| {
-            let mut trie = Node::new('\x00');
-            for w in words.iter() {
-                // t0 = Instant::now();
-                trie.insert_bypool(&w, &mut pool);
-                // inserts.push(t0.elapsed().as_nanos());
+        let mut i = 0;
+    
+        b.iter(|| {
+            _trie.insert_bypool(&words[i], &mut pool);
+            i = i + 1;
+            if i == words.len() {
+                i = 0;
             }
-        }, BatchSize::LargeInput)
+        })
     });
 
+    let mut trie = Node::new('\x00');
     for w in words.iter() {
         trie.insert(&w);
     }
 
     // let mut res;
     c.bench_function("trie lookup", |b| {
-        b.iter_batched_ref(|| words.clone() , |words| {
-            for w in words.iter() {
-                black_box(trie.lookup(&w, None, None));
+        let mut i = 0;
+        b.iter(|| {
+            black_box(trie.lookup(&words[i], None, None));
+            i = i + 1;
+            if i == words.len() {
+                i = 0;
             }
-        }, BatchSize::LargeInput)
+        })
     });
 
+    let mut _h = HashSet::new();
     c.bench_function("hash insert", |b| {
-        b.iter_batched_ref(|| words.clone() , |words| {
-            let mut h = HashSet::new();
-            for w in words.iter() {
-                 h.insert(w);
+        
+        let mut i = 0;
+        b.iter(|| {
+            _h.insert(&words[i]);
+            i = i + 1;
+            if i == words.len() {
+                i = 0;
             }
-        }, BatchSize::LargeInput)
+        })
     });
 
     let mut h = HashSet::new();
-
     for w in words.iter() {
         h.insert(w);
     }
 
     c.bench_function("hash lookup", |b| {
-        b.iter_batched_ref(|| words.clone() , |words| {
-            for w in words.iter() {
-                black_box(h.get(w));
+        let mut i = 0;
+
+        b.iter(|| {
+            black_box(h.get(&words[i]));
+            i = i + 1;
+            if i == words.len() {
+                i = 0;
             }
-        }, BatchSize::LargeInput)
+        })
     });
 }
