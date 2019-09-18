@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 uuid = { version = "0.7", features = ["v4"]}
 lifeguard = { version = "0.5.2" }
+fnv = "1.0.6"

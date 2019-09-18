@@ -6,8 +6,9 @@ use std::io::prelude::*;
 use std::fs::File;
 use uuid::Uuid;
 use std::time::{Duration, Instant};
-extern crate lifeguard;
+// extern crate lifeguard;
 use lifeguard::*;
+use fnv::FnvHashMap;
 
 // const xid: Uuid = Uuid::new_v4();
 
@@ -15,7 +16,7 @@ use lifeguard::*;
 struct Node {
     val: char,
     id: Uuid,
-    children: HashMap<char, Box<Node>>,
+    children: FnvHashMap<char, Box<Node>>,
     is_terminal: bool, 
 }
 
@@ -53,7 +54,7 @@ impl Node {
         Node {
             val: c,
             id: id,
-            children: HashMap::new(),
+            children: FnvHashMap::default(),
             is_terminal: false,
         }
     }
@@ -148,10 +149,11 @@ fn bench() {
 
 
     let mut words: Vec<String> = f.lines().map(|x| x.unwrap()).collect();
+    words = [words.clone(), words].concat(); // double the size
 
     let mut t0;
     let mut trie = Node::new('\x00');
-    let mut pool:Pool<Box<Node>> = pool().with(StartingSize(words.len())).build();
+    let mut pool:Pool<Box<Node>> = pool().with(StartingSize(words.len() * 2)).build();
 
     let mut inserts = Vec::new();
     let mut lookups = Vec::new();
