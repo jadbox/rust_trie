@@ -114,7 +114,7 @@ impl Node {
         let mut path: String = s; // .clone(); // No need to .clone(), already own it by copy
 
         while true {
-            // terminal node - should also add check for null char (we could have brom and brom, but it would not)
+            // terminal node - should also add check for null char
             if next.children.len() == 0 || next.is_terminal {
                 suggestions.push(path.clone());
             }
