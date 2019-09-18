@@ -11,5 +11,5 @@ fnv = "1.0.6"
 criterion = "0.3"
 
 [[bench]]
-name = "my_benchmark"
+name = "benchmark"
 harness = false

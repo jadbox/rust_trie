@@ -33,19 +33,11 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let f = BufReader::new(f);
 
     let words2: Vec<String> = f.lines().map(|x| x.unwrap()).collect();
-    let words = words2[0..60000].to_vec();
-    
-    // words = [words.clone(), words].concat(); // double the size
+    let words = words2[0..60000].to_vec(); // limit input for speed
 
     let mut trie = Node::new('\x00');
     let mut pool: Pool<Box<Node>> = pool().with(StartingSize(words.len() * 2)).build();
 
-    // let mut inserts = Vec::new();
-    // let mut lookups = Vec::new();
-
-    // let mut group = c.benchmark_group("small");
-    // group.sample_size(1);
-    // c.sample_size(2);
     c.bench_function("trie insert", |b| {
         b.iter_batched_ref(|| words.clone(), |words| {
             let mut trie = Node::new('\x00');
@@ -56,7 +48,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             }
         }, BatchSize::LargeInput)
     });
-    // group.finish();
 
     for w in words.iter() {
         trie.insert(&w);
@@ -70,30 +61,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             }
         }, BatchSize::LargeInput)
     });
-
-    // let mut v = Vec::new();
-    // let mut vinserts = Vec::new();
-    // let mut vlookups = Vec::new();
-
-    // for w in words.iter() {
-    //     t0 = Instant::now();
-    //     v.push(w.clone());
-    //     vinserts.push(t0.elapsed().as_nanos());
-    // }
-
-    // let mut b = true;
-    // for w in words.iter() {
-    //     t0 = Instant::now();
-    //     if v.contains(w) {
-    //         b = true;
-    //     }
-    //     b = false;
-
-    //     vlookups.push(t0.elapsed().as_nanos());
-
-    // }
-
-    // println!("vector:  median insert {}, median lookup {}", vinserts[inserts.len()/2], vlookups[lookups.len()/2]);
 
     c.bench_function("hash insert", |b| {
         b.iter_batched_ref(|| words.clone() , |words| {
