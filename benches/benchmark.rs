@@ -38,20 +38,15 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let mut pool: Pool<Box<Node>> = pool().with(StartingSize(words.len() * 2)).build();
 
     let mut trie = Node::new('\x00');
-    let mut i = 0;
-    let mut r = false;
     c.bench_function("trie insert", |b| {
-        // if r == true {
-            trie = Node::new('\x00');
-        //    r = false;
-        // }
+        let mut i = 0;
+        trie = Node::new('\x00');
     
         b.iter(|| {
             trie.insert_bypool(&words[i], &mut pool);
             i = i + 1;
             if i == words.len() {
                 i = 0;
-                r = true;
             }
         })
     });
@@ -61,7 +56,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         trie.insert(&w);
     }
 
-    // let mut res;
     c.bench_function("trie lookup", |b| {
         let mut i = 0;
         b.iter(|| {
