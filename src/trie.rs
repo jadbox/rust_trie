@@ -13,20 +13,20 @@ use lifeguard::*;
 #[derive(Debug)]
 pub struct Node {
     val: char,
-    children: FnvHashMap<char, Box<Node>>,
+    children: FnvHashMap<char, Node>,
     is_terminal: bool,
 }
 
-impl lifeguard::Recycleable for Box<Node> {
+impl lifeguard::Recycleable for Node {
     fn new() -> Self {
-        return Box::new(Node::new('!'));
+        return Node::new('!');
     }
     fn reset(&mut self) {
         return;
     }
 }
 
-impl lifeguard::InitializeWith<char> for Box<Node> {
+impl lifeguard::InitializeWith<char> for Node {
     fn initialize_with(&mut self, source: char) {
         self.val = source;
     }
@@ -54,13 +54,13 @@ impl Node {
             next = next
                 .children
                 .entry(c)
-                .or_insert_with(|| Box::new(Node::new(c)));
+                .or_insert_with(|| Node::new(c));
         }
 
         next.set_terminal()
     }
 
-    pub fn insert_bypool(&mut self, s: &str, pool: &mut Pool<Box<Node>>) {
+    pub fn insert_bypool(&mut self, s: &str, pool: &mut Pool<Node>) {
         let mut next = self;
         for c in s.chars() {
             next = next
@@ -103,7 +103,7 @@ impl Node {
         }
 
         // let mut explored: HashSet<Uuid> = HashSet::new();
-        let mut frontier: Vec<(&Box<Node>, String)> = Vec::new();
+        let mut frontier: Vec<(&Node, String)> = Vec::new();
         // let pathi = s.to_string();
         let mut path = s.to_string(); // No need to .clone(), already own it by copy
 

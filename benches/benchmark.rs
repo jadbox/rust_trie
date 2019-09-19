@@ -35,12 +35,11 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     let words: Vec<String> = f.lines().map(|x| x.unwrap()).collect();
 
-    let mut pool: Pool<Box<Node>> = pool().with(StartingSize(words.len() * 2)).build();
-
     let mut trie = Node::new('\x00');
     c.bench_function("trie insert", |b| {
         let mut i = 0;
         trie = Node::new('\x00');
+        let mut pool: Pool<Node> = pool().with(StartingSize(words.len() * 2)).build();
     
         b.iter(|| {
             trie.insert_bypool(&words[i], &mut pool);
@@ -52,8 +51,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
 
     trie = Node::new('\x00');
+    let mut pool: Pool<Node> = pool().with(StartingSize(words.len() * 2)).build();
     for w in words.iter() {
-        trie.insert(&w);
+        trie.insert_bypool(&w, &mut pool);
     }
 
     c.bench_function("trie lookup", |b| {
