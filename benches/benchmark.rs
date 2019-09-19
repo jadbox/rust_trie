@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate trie;
 use trie::trie::Node;
+use trie::trie_old::Node as OldNode;
 
 use fnv::FnvHashMap;
 use lifeguard::*;
@@ -22,7 +23,7 @@ use criterion::*;
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(1200).measurement_time(Duration::from_secs(2)).warm_up_time(Duration::from_secs(1));
+    config = Criterion::default().sample_size(100).measurement_time(Duration::from_secs(2)).warm_up_time(Duration::from_secs(1));
     targets = criterion_benchmark
 }
 criterion_main!(benches);
@@ -36,20 +37,26 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     let mut pool: Pool<Box<Node>> = pool().with(StartingSize(words.len() * 2)).build();
 
-    let mut _trie = Node::new('\x00');
+    let mut trie = Node::new('\x00');
+    let mut i = 0;
+    let mut r = false;
     c.bench_function("trie insert", |b| {
-        let mut i = 0;
+        // if r == true {
+            trie = Node::new('\x00');
+        //    r = false;
+        // }
     
         b.iter(|| {
-            _trie.insert_bypool(&words[i], &mut pool);
+            trie.insert_bypool(&words[i], &mut pool);
             i = i + 1;
             if i == words.len() {
                 i = 0;
+                r = true;
             }
         })
     });
 
-    let mut trie = Node::new('\x00');
+    trie = Node::new('\x00');
     for w in words.iter() {
         trie.insert(&w);
     }
@@ -66,12 +73,14 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    let mut _h = HashSet::new();
-    c.bench_function("hash insert", |b| {
-        
+    
+    let mut trie2 = OldNode::new('\x00');
+    c.bench_function("old trie insert", |b| {
+        trie2 = OldNode::new('\x00');
         let mut i = 0;
+    
         b.iter(|| {
-            _h.insert(&words[i]);
+            trie2.insert(words[i].clone());
             i = i + 1;
             if i == words.len() {
                 i = 0;
@@ -79,16 +88,16 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    let mut h = HashSet::new();
+    trie2 = OldNode::new('\x00');
     for w in words.iter() {
-        h.insert(w);
+        trie2.insert(w.clone());
     }
 
-    c.bench_function("hash lookup", |b| {
+    // let mut res;
+    c.bench_function("old trie lookup", |b| {
         let mut i = 0;
-
         b.iter(|| {
-            black_box(h.get(&words[i]));
+            black_box(trie2.lookup(words[i].clone()));
             i = i + 1;
             if i == words.len() {
                 i = 0;

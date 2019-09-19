@@ -13,7 +13,6 @@ use lifeguard::*;
 #[derive(Debug)]
 pub struct Node {
     val: char,
-    // id: Uuid,
     children: FnvHashMap<char, Box<Node>>,
     is_terminal: bool,
 }
